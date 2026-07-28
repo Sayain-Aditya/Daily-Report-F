@@ -1,15 +1,57 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { X, Save, AlertTriangle } from 'lucide-react';
 import Field from './Field';
 import { CLIENT_STATUS, MEETING_PLACE } from '../constants';
 
 const inputCls = 'w-full px-3 py-2.5 rounded-lg border border-neutral-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 placeholder:text-neutral-400';
 
+function SuggestInput({ value, onChange, suggestions = [], placeholder, id }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  const filtered = value.trim()
+    ? suggestions.filter((s) => s.toLowerCase().includes(value.trim().toLowerCase()) && s.toLowerCase() !== value.trim().toLowerCase())
+    : [];
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <input
+        id={id}
+        className={inputCls}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => { onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        autoComplete="off"
+      />
+      {open && filtered.length > 0 && (
+        <ul className="absolute z-20 w-full bg-white border border-neutral-200 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto">
+          {filtered.map((s) => (
+            <li
+              key={s}
+              onMouseDown={() => { onChange(s); setOpen(false); }}
+              className="px-3 py-2 text-sm text-neutral-700 hover:bg-orange-50 cursor-pointer"
+            >
+              {s}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 export default function FormView({
   form, setForm, onSubmit, editing, onCancel,
-  firmSuggestions = [], ownerSuggestions = [], saveAndAdd, setSaveAndAdd, duplicateWarning,
+  firmSuggestions = [], ownerSuggestions = [], ownerNameSuggestions = [], saveAndAdd, setSaveAndAdd, duplicateWarning,
 }) {
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: typeof v === 'string' ? v : v.target.value }));
 
   return (
     <div>
@@ -35,14 +77,16 @@ export default function FormView({
         </Field>
 
         <Field label="Firm name" required>
-          <input list="firm-suggestions" className={inputCls} placeholder="e.g. Pintu Tyres" value={form.firmName} onChange={set('firmName')} />
-          <datalist id="firm-suggestions">{firmSuggestions.map((f) => <option key={f} value={f} />)}</datalist>
+          <SuggestInput value={form.firmName} onChange={set('firmName')} suggestions={firmSuggestions} placeholder="e.g. Pintu Tyres" />
+        </Field>
+
+        <Field label="Owner name">
+          <SuggestInput value={form.ownerName} onChange={set('ownerName')} suggestions={ownerNameSuggestions} placeholder="e.g. Ramesh Gupta" />
         </Field>
 
         <div className="grid grid-cols-2 gap-3">
           <Field label="Owner / contact person" required>
-            <input list="owner-suggestions" className={inputCls} placeholder="e.g. Pratul Yadav" value={form.owner} onChange={set('owner')} />
-            <datalist id="owner-suggestions">{ownerSuggestions.map((o) => <option key={o} value={o} />)}</datalist>
+            <SuggestInput value={form.owner} onChange={set('owner')} suggestions={ownerSuggestions} placeholder="e.g. Pratul Yadav" />
           </Field>
           <Field label="Phone" required>
             <input className={inputCls} placeholder="10-digit number" inputMode="numeric" value={form.phone} onChange={set('phone')} />

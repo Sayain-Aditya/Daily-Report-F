@@ -57,6 +57,7 @@ export default function App() {
 
   const firmSuggestions = useMemo(() => Array.from(new Set(entries.map((e) => e.firmName).filter(Boolean))), [entries]);
   const ownerSuggestions = useMemo(() => Array.from(new Set(entries.map((e) => e.owner).filter(Boolean))), [entries]);
+  const ownerNameSuggestions = useMemo(() => Array.from(new Set(entries.map((e) => e.ownerName).filter(Boolean))), [entries]);
 
   const filteredEntries = useMemo(() => {
     let list = [...entries];
@@ -151,7 +152,7 @@ export default function App() {
           <FormView
             form={form} setForm={setForm} onSubmit={handleSubmit}
             editing={!!editingId} onCancel={resetForm}
-            firmSuggestions={firmSuggestions} ownerSuggestions={ownerSuggestions}
+            firmSuggestions={firmSuggestions} ownerSuggestions={ownerSuggestions} ownerNameSuggestions={ownerNameSuggestions}
             saveAndAdd={saveAndAdd} setSaveAndAdd={setSaveAndAdd}
             duplicateWarning={!editingId && isDuplicate(entries, form.date, form.firmName, form.phone)}
           />
