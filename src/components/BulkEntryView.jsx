@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
-import { Plus, X, Upload, CopyPlus, Loader2, AlertTriangle } from 'lucide-react';
+import { Plus, X, Upload, CopyPlus, Loader2, AlertTriangle, ChevronDown } from 'lucide-react';
 import Field from './Field';
 import { CLIENT_STATUS, MEETING_PLACE } from '../constants';
 
-const inputCls = 'w-full px-3 py-2.5 rounded-lg border border-neutral-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 placeholder:text-neutral-400';
+const inputCls = 'w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 placeholder:text-slate-400 transition-all duration-200 shadow-xs';
+const selectCls = inputCls + ' appearance-none cursor-pointer pr-9';
 
 const todayStr = () => new Date().toISOString().slice(0, 10);
 
@@ -27,9 +28,7 @@ const FIELD_ALIASES = {
   remarks: ['remark', 'remarks'],
 };
 
-function normalizeHeader(h) {
-  return String(h || '').toLowerCase().replace(/[^a-z]/g, '');
-}
+function normalizeHeader(h) { return String(h || '').toLowerCase().replace(/[^a-z]/g, ''); }
 
 function mapImportedRow(obj) {
   const row = makeEmptyRow();
@@ -49,6 +48,17 @@ function isDuplicate(entries, date, firmName, phone) {
     (e) => e.date === date &&
       e.phone.replace(/\D/g, '') === phone.replace(/\D/g, '') &&
       e.firmName.trim().toLowerCase() === firmName.trim().toLowerCase()
+  );
+}
+
+function SelectField({ value, onChange, options }) {
+  return (
+    <div className="relative">
+      <select className={selectCls} value={value} onChange={onChange}>
+        {options.map((s) => <option key={s} value={s}>{s}</option>)}
+      </select>
+      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+    </div>
   );
 }
 
@@ -93,56 +103,72 @@ export default function BulkEntryView({ onSaveAll, firmSuggestions = [], ownerSu
   };
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold">Bulk entry</h2>
-        <span className="text-xs text-neutral-500">{filledCount} of {rows.length} ready</span>
+    <div className="animate-slide-up">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-lg font-bold text-slate-800">Bulk Entry</h2>
+          <p className="text-xs text-slate-500 mt-0.5">Add multiple visits at once</p>
+        </div>
+        <span className="text-xs font-semibold text-orange-600 bg-orange-50 border border-orange-100 px-3 py-1.5 rounded-xl">
+          {filledCount} / {rows.length} ready
+        </span>
       </div>
 
-      <div className="bg-white rounded-xl border border-neutral-200 p-3.5 mb-3">
-        <Field label="Date for these visits" required>
+      {/* Date + Import */}
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5 mb-4">
+        <Field label="Date for all visits" required>
           <input type="date" className={inputCls} value={date} onChange={(e) => setDate(e.target.value)} />
         </Field>
-        <button onClick={() => fileRef.current?.click()} disabled={importing} className="w-full flex items-center justify-center gap-1.5 text-xs font-medium text-neutral-600 border border-neutral-300 rounded-lg py-2 hover:bg-neutral-50 disabled:opacity-50">
-          {importing ? <Loader2 size={13} className="animate-spin" /> : <Upload size={13} />}
-          Import from Excel / CSV
+        <button
+          onClick={() => fileRef.current?.click()}
+          disabled={importing}
+          className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-slate-600 bg-slate-50 border border-dashed border-slate-300 rounded-xl py-3 hover:bg-slate-100 disabled:opacity-50 transition-colors"
+        >
+          {importing ? <Loader2 size={15} className="animate-spin" /> : <Upload size={15} className="text-blue-500" />}
+          {importing ? 'Importing...' : 'Import from Excel / CSV'}
         </button>
         <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv" hidden onChange={handleFile} />
-        <p className="text-[11px] text-neutral-400 mt-2">Columns: Firm Name, Customer Name, Contact No., Designation, Client Status, Meeting Place, Location, Remark.</p>
+        <p className="text-[11px] text-slate-400 mt-2.5 leading-relaxed">
+          Columns: Firm Name, Customer Name, Contact No., Designation, Client Status, Meeting Place, Location, Remark.
+        </p>
       </div>
 
-      <div className="space-y-2.5">
+      {/* Rows */}
+      <div className="space-y-3">
         {rows.map((r, idx) => {
           const dup = isDuplicate(existingEntries, date, r.firmName, r.phone);
           return (
-            <div key={r._key} className="bg-white rounded-xl border border-neutral-200 p-3.5">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-semibold text-neutral-400">Row {idx + 1}</span>
-                <button onClick={() => removeRow(r._key)} className="text-neutral-400 hover:text-red-600"><X size={15} /></button>
-              </div>
-              {dup && (
-                <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1 mb-2">
-                  <AlertTriangle size={12} className="shrink-0" /> Possible duplicate for this date
+            <div key={r._key} className="bg-white rounded-2xl border border-slate-200 shadow-card p-4">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-xs font-bold text-slate-500">{idx + 1}</span>
+                  {dup && (
+                    <div className="flex items-center gap-1.5 text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-2 py-1">
+                      <AlertTriangle size={11} className="shrink-0" /> Possible duplicate
+                    </div>
+                  )}
                 </div>
-              )}
-              <div className="grid grid-cols-2 gap-2 mb-2">
+                <button onClick={() => removeRow(r._key)} className="w-7 h-7 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 flex items-center justify-center transition-colors">
+                  <X size={14} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <input list="bulk-firm-suggestions" className={inputCls} placeholder="Firm name *" value={r.firmName} onChange={(e) => updateRow(r._key, 'firmName', e.target.value)} />
                 <input list="bulk-owner-suggestions" className={inputCls} placeholder="Owner *" value={r.owner} onChange={(e) => updateRow(r._key, 'owner', e.target.value)} />
               </div>
-              <div className="grid grid-cols-2 gap-2 mb-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
                 <input className={inputCls} placeholder="Phone *" inputMode="numeric" value={r.phone} onChange={(e) => updateRow(r._key, 'phone', e.target.value)} />
                 <input className={inputCls} placeholder="Designation" value={r.designation} onChange={(e) => updateRow(r._key, 'designation', e.target.value)} />
               </div>
-              <div className="grid grid-cols-2 gap-2 mb-2">
-                <select className={inputCls} value={r.clientStatus} onChange={(e) => updateRow(r._key, 'clientStatus', e.target.value)}>
-                  {CLIENT_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
-                <select className={inputCls} value={r.meetingPlace} onChange={(e) => updateRow(r._key, 'meetingPlace', e.target.value)}>
-                  {MEETING_PLACE.map((s) => <option key={s} value={s}>{s}</option>)}
-                </select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
+                <SelectField value={r.clientStatus} onChange={(e) => updateRow(r._key, 'clientStatus', e.target.value)} options={CLIENT_STATUS} />
+                <SelectField value={r.meetingPlace} onChange={(e) => updateRow(r._key, 'meetingPlace', e.target.value)} options={MEETING_PLACE} />
               </div>
-              <input className={inputCls + ' mb-2'} placeholder="Location" value={r.location} onChange={(e) => updateRow(r._key, 'location', e.target.value)} />
-              <input className={inputCls} placeholder="Remarks" value={r.remarks} onChange={(e) => updateRow(r._key, 'remarks', e.target.value)} />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <input className={inputCls} placeholder="Location" value={r.location} onChange={(e) => updateRow(r._key, 'location', e.target.value)} />
+                <input className={inputCls} placeholder="Remarks" value={r.remarks} onChange={(e) => updateRow(r._key, 'remarks', e.target.value)} />
+              </div>
             </div>
           );
         })}
@@ -151,11 +177,20 @@ export default function BulkEntryView({ onSaveAll, firmSuggestions = [], ownerSu
       <datalist id="bulk-firm-suggestions">{firmSuggestions.map((f) => <option key={f} value={f} />)}</datalist>
       <datalist id="bulk-owner-suggestions">{ownerSuggestions.map((o) => <option key={o} value={o} />)}</datalist>
 
-      <button onClick={addRow} className="w-full mt-3 flex items-center justify-center gap-1.5 text-xs font-medium text-neutral-600 border border-dashed border-neutral-300 rounded-lg py-2.5 hover:bg-neutral-50">
-        <Plus size={14} /> Add another row
+      <button
+        onClick={addRow}
+        className="w-full mt-4 flex items-center justify-center gap-2 text-sm font-semibold text-slate-500 border border-dashed border-slate-300 rounded-2xl py-3 hover:bg-slate-50 hover:text-slate-700 transition-colors"
+      >
+        <Plus size={16} /> Add another row
       </button>
-      <button onClick={handleSaveAll} disabled={filledCount === 0} className="w-full mt-3 bg-orange-600 text-white text-sm font-medium py-2.5 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform disabled:opacity-40">
-        <CopyPlus size={15} /> Save {filledCount || ''} {filledCount === 1 ? 'entry' : 'entries'}
+
+      <button
+        onClick={handleSaveAll}
+        disabled={filledCount === 0}
+        className="w-full mt-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:from-orange-600 hover:to-orange-700 active:scale-[0.98] transition-all duration-200 shadow-card-md disabled:opacity-40"
+      >
+        <CopyPlus size={16} />
+        Save {filledCount || ''} {filledCount === 1 ? 'entry' : 'entries'}
       </button>
     </div>
   );

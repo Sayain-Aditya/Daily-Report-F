@@ -1,9 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import { X, Save, AlertTriangle } from 'lucide-react';
+import { X, Save, AlertTriangle, ChevronDown } from 'lucide-react';
 import Field from './Field';
 import { CLIENT_STATUS, MEETING_PLACE } from '../constants';
 
-const inputCls = 'w-full px-3 py-2.5 rounded-lg border border-neutral-300 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/40 focus:border-orange-500 placeholder:text-neutral-400';
+const inputCls = 'w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-orange-500/30 focus:border-orange-400 placeholder:text-slate-400 transition-all duration-200 shadow-xs';
+const selectCls = inputCls + ' appearance-none cursor-pointer pr-9';
 
 function SuggestInput({ value, onChange, suggestions = [], placeholder, id }) {
   const [open, setOpen] = useState(false);
@@ -31,12 +32,12 @@ function SuggestInput({ value, onChange, suggestions = [], placeholder, id }) {
         autoComplete="off"
       />
       {open && filtered.length > 0 && (
-        <ul className="absolute z-20 w-full bg-white border border-neutral-200 rounded-lg shadow-lg mt-1 max-h-40 overflow-y-auto">
+        <ul className="absolute z-30 w-full bg-white border border-slate-200 rounded-xl shadow-card-md mt-1.5 max-h-44 overflow-y-auto animate-slide-down">
           {filtered.map((s) => (
             <li
               key={s}
               onMouseDown={() => { onChange(s); setOpen(false); }}
-              className="px-3 py-2 text-sm text-neutral-700 hover:bg-orange-50 cursor-pointer"
+              className="px-4 py-2.5 text-sm text-slate-700 hover:bg-orange-50 hover:text-orange-700 cursor-pointer first:rounded-t-xl last:rounded-b-xl transition-colors"
             >
               {s}
             </li>
@@ -47,45 +48,55 @@ function SuggestInput({ value, onChange, suggestions = [], placeholder, id }) {
   );
 }
 
+function SelectField({ value, onChange, options }) {
+  return (
+    <div className="relative">
+      <select className={selectCls} value={value} onChange={onChange}>
+        {options.map((s) => <option key={s} value={s}>{s}</option>)}
+      </select>
+      <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+    </div>
+  );
+}
+
 export default function FormView({
   form, setForm, onSubmit, editing, onCancel,
-  firmSuggestions = [], ownerSuggestions = [], ownerNameSuggestions = [], saveAndAdd, setSaveAndAdd, duplicateWarning,
+  firmSuggestions = [], ownerSuggestions = [], saveAndAdd, setSaveAndAdd, duplicateWarning,
 }) {
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: typeof v === 'string' ? v : v.target.value }));
 
   return (
-    <div>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold">{editing ? 'Edit visit' : "Log today's visit"}</h2>
+    <div className="animate-slide-up">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h2 className="text-lg font-bold text-slate-800">{editing ? 'Edit Visit' : "Log Today's Visit"}</h2>
+          <p className="text-xs text-slate-500 mt-0.5">{editing ? 'Update the entry details below' : 'Fill in the visit details'}</p>
+        </div>
         {editing && (
-          <button onClick={onCancel} className="text-xs text-neutral-500 flex items-center gap-1 hover:text-neutral-700">
-            <X size={13} /> Cancel edit
+          <button onClick={onCancel} className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 px-3 py-1.5 rounded-lg transition-colors">
+            <X size={13} /> Cancel
           </button>
         )}
       </div>
 
       {duplicateWarning && (
-        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-lg px-3 py-2 mb-3">
-          <AlertTriangle size={14} className="shrink-0 mt-0.5" />
-          You already logged this firm and phone number today. Saving again will add a second entry.
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 text-amber-800 text-xs rounded-2xl px-4 py-3 mb-4 animate-fade-in">
+          <AlertTriangle size={15} className="shrink-0 mt-0.5 text-amber-500" />
+          <span>You already logged this firm and phone number today. Saving again will add a second entry.</span>
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-neutral-200 p-4">
+      <div className="bg-white rounded-2xl border border-slate-200 shadow-card p-5 space-y-0">
         <Field label="Date" required>
           <input type="date" className={inputCls} value={form.date} onChange={set('date')} />
         </Field>
 
-        <Field label="Firm name" required>
+        <Field label="Firm Name" required>
           <SuggestInput value={form.firmName} onChange={set('firmName')} suggestions={firmSuggestions} placeholder="e.g. Pintu Tyres" />
         </Field>
 
-        <Field label="Owner name">
-          <SuggestInput value={form.ownerName} onChange={set('ownerName')} suggestions={ownerNameSuggestions} placeholder="e.g. Ramesh Gupta" />
-        </Field>
-
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Owner / contact person" required>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Owner / Contact Person" required>
             <SuggestInput value={form.owner} onChange={set('owner')} suggestions={ownerSuggestions} placeholder="e.g. Pratul Yadav" />
           </Field>
           <Field label="Phone" required>
@@ -97,16 +108,12 @@ export default function FormView({
           <input className={inputCls} placeholder="e.g. Owner, Manager, Purchase Head" value={form.designation} onChange={set('designation')} />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Client status">
-            <select className={inputCls} value={form.clientStatus} onChange={set('clientStatus')}>
-              {CLIENT_STATUS.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Client Status">
+            <SelectField value={form.clientStatus} onChange={set('clientStatus')} options={CLIENT_STATUS} />
           </Field>
-          <Field label="Meeting place">
-            <select className={inputCls} value={form.meetingPlace} onChange={set('meetingPlace')}>
-              {MEETING_PLACE.map((s) => <option key={s} value={s}>{s}</option>)}
-            </select>
+          <Field label="Meeting Place">
+            <SelectField value={form.meetingPlace} onChange={set('meetingPlace')} options={MEETING_PLACE} />
           </Field>
         </div>
 
@@ -119,16 +126,24 @@ export default function FormView({
         </Field>
 
         {!editing && (
-          <label className="flex items-center gap-2 mb-3 text-xs text-neutral-600 select-none">
-            <input type="checkbox" className="w-3.5 h-3.5 accent-orange-600" checked={saveAndAdd} onChange={(e) => setSaveAndAdd(e.target.checked)} />
-            Keep adding — stay here after saving for the next visit
+          <label className="flex items-center gap-2.5 py-1 text-sm text-slate-600 select-none cursor-pointer group">
+            <div className={`w-4 h-4 rounded-md border-2 flex items-center justify-center transition-colors ${saveAndAdd ? 'bg-orange-500 border-orange-500' : 'border-slate-300 group-hover:border-orange-400'}`}>
+              {saveAndAdd && <svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+            </div>
+            <input type="checkbox" className="sr-only" checked={saveAndAdd} onChange={(e) => setSaveAndAdd(e.target.checked)} />
+            Keep adding after save
           </label>
         )}
 
-        <button onClick={onSubmit} className="w-full mt-1 bg-orange-600 text-white text-sm font-medium py-2.5 rounded-lg flex items-center justify-center gap-1.5 active:scale-[0.98] transition-transform">
-          <Save size={15} />
-          {editing ? 'Update entry' : saveAndAdd ? 'Save & add next' : 'Save entry'}
-        </button>
+        <div className="pt-2">
+          <button
+            onClick={onSubmit}
+            className="w-full bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm font-semibold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:from-orange-600 hover:to-orange-700 active:scale-[0.98] transition-all duration-200 shadow-card-md"
+          >
+            <Save size={16} />
+            {editing ? 'Update Entry' : saveAndAdd ? 'Save & Add Next' : 'Save Entry'}
+          </button>
+        </div>
       </div>
     </div>
   );

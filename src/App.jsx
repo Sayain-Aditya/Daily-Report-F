@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Settings, ClipboardList, Rows3, Check, Loader2, LayoutDashboard, LogOut } from 'lucide-react';
+import { Plus, Settings, ClipboardList, Rows3, Check, Loader2, LayoutDashboard, LogOut, ChevronRight } from 'lucide-react';
 
 import WelcomeScreen from './components/WelcomeScreen';
 import OwnerDashboard from './components/OwnerDashboard';
@@ -43,6 +43,12 @@ async function exportExcel(entries, settings, showToast) {
   showToast('Excel file downloaded');
 }
 
+const NAV_TABS = [
+  { id: 'form',    label: 'New Entry', Icon: Plus },
+  { id: 'bulk',    label: 'Bulk',      Icon: Rows3 },
+  { id: 'reports', label: 'Reports',   Icon: ClipboardList },
+];
+
 export default function App() {
   const [authUser, setAuthUser] = useState(() => getStoredAuth());
   const [showDashboard, setShowDashboard] = useState(false);
@@ -57,7 +63,6 @@ export default function App() {
 
   const firmSuggestions = useMemo(() => Array.from(new Set(entries.map((e) => e.firmName).filter(Boolean))), [entries]);
   const ownerSuggestions = useMemo(() => Array.from(new Set(entries.map((e) => e.owner).filter(Boolean))), [entries]);
-  const ownerNameSuggestions = useMemo(() => Array.from(new Set(entries.map((e) => e.ownerName).filter(Boolean))), [entries]);
 
   const filteredEntries = useMemo(() => {
     let list = [...entries];
@@ -96,63 +101,80 @@ export default function App() {
   };
 
   if (!authUser) {
-    return (
-      <WelcomeScreen
-        onAuth={(user) => {
-          setAuthUser(user);
-        }}
-      />
-    );
+    return <WelcomeScreen onAuth={(user) => setAuthUser(user)} />;
   }
 
   if (!loaded) {
     return (
-      <div className="min-h-[400px] flex items-center justify-center bg-neutral-50">
-        <Loader2 className="animate-spin text-neutral-400" size={28} />
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-card-md">
+            <ClipboardList size={22} className="text-white" />
+          </div>
+          <Loader2 className="animate-spin text-orange-500" size={22} />
+          <p className="text-sm text-slate-500">Loading your data...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 flex flex-col">
+    <div className="min-h-screen bg-slate-100 text-slate-900 flex flex-col">
       {/* Header */}
-      <div className="bg-white border-b border-neutral-200 sticky top-0 z-10">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-orange-600 flex items-center justify-center">
-              <ClipboardList size={17} className="text-white" />
+      <header className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-xs">
+        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+          {/* Logo + title */}
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center shadow-xs">
+              <ClipboardList size={16} className="text-white" />
             </div>
             <div>
-              <h1 className="text-sm font-semibold leading-tight">Daily Visit Report</h1>
-              <p className="text-[11px] text-neutral-500 leading-tight">
-                {todayCount} visit{todayCount === 1 ? '' : 's'} today · {entries.length} total
+              <h1 className="text-sm font-bold text-slate-800 leading-tight">Daily Visit Report</h1>
+              <p className="text-[11px] text-slate-400 leading-tight">
+                <span className="text-orange-500 font-semibold">{todayCount}</span> today · {entries.length} total
               </p>
             </div>
           </div>
+
+          {/* Header actions */}
           <div className="flex items-center gap-1">
             {authUser?.isOwner && (
-              <button onClick={() => setShowDashboard(true)} className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-500 hover:bg-neutral-100" title="Firm Dashboard">
-                <LayoutDashboard size={17} />
+              <button
+                onClick={() => setShowDashboard(true)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-orange-600 hover:bg-orange-50 px-2.5 py-1.5 rounded-xl transition-colors"
+                title="Firm Dashboard"
+              >
+                <LayoutDashboard size={15} />
+                <span className="hidden sm:inline">Dashboard</span>
               </button>
             )}
-            <button onClick={() => setTab('settings')} className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-500 hover:bg-neutral-100">
-              <Settings size={17} />
+            <button
+              onClick={() => setTab('settings')}
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+              title="Settings"
+            >
+              <Settings size={16} />
             </button>
-            <button onClick={handleLogout} className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-500 hover:bg-neutral-100" title={`Logout (${authUser.name})`}>
-              <LogOut size={17} />
+            <button
+              onClick={handleLogout}
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-500 hover:text-red-500 hover:bg-red-50 transition-colors"
+              title={`Logout (${authUser.name})`}
+            >
+              <LogOut size={16} />
             </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-2xl w-full mx-auto flex-1 px-4 pb-24 pt-4">
+      {/* Main content */}
+      <main className="max-w-2xl w-full mx-auto flex-1 px-4 pb-24 pt-5">
         {showDashboard && <OwnerDashboard onBack={() => setShowDashboard(false)} />}
 
         {!showDashboard && tab === 'form' && (
           <FormView
             form={form} setForm={setForm} onSubmit={handleSubmit}
             editing={!!editingId} onCancel={resetForm}
-            firmSuggestions={firmSuggestions} ownerSuggestions={ownerSuggestions} ownerNameSuggestions={ownerNameSuggestions}
+            firmSuggestions={firmSuggestions} ownerSuggestions={ownerSuggestions}
             saveAndAdd={saveAndAdd} setSaveAndAdd={setSaveAndAdd}
             duplicateWarning={!editingId && isDuplicate(entries, form.date, form.firmName, form.phone)}
           />
@@ -188,30 +210,51 @@ export default function App() {
             onBack={() => setTab('reports')}
           />
         )}
-      </div>
+      </main>
 
       {/* Bottom tab bar */}
       {!showDashboard && tab !== 'settings' && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-neutral-200 z-10">
-          <div className="max-w-2xl mx-auto grid grid-cols-3">
-            <button onClick={() => { resetForm(); setTab('form'); }} className={`flex flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium ${tab === 'form' ? 'text-orange-600' : 'text-neutral-500'}`}>
-              <Plus size={19} /> New Entry
-            </button>
-            <button onClick={() => setTab('bulk')} className={`flex flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium ${tab === 'bulk' ? 'text-orange-600' : 'text-neutral-500'}`}>
-              <Rows3 size={19} /> Bulk Entry
-            </button>
-            <button onClick={() => setTab('reports')} className={`flex flex-col items-center justify-center gap-0.5 py-2.5 text-xs font-medium ${tab === 'reports' ? 'text-orange-600' : 'text-neutral-500'}`}>
-              <ClipboardList size={19} /> Reports
-            </button>
+        <nav className="fixed bottom-0 left-0 right-0 z-20">
+          <div className="bg-white/90 backdrop-blur-md border-t border-slate-200 shadow-card-lg">
+            <div className="max-w-2xl mx-auto px-4 py-2 flex items-center justify-around">
+              {NAV_TABS.map(({ id, label, Icon }) => {
+                const active = tab === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => { if (id === 'form') resetForm(); setTab(id); }}
+                    className={`flex flex-col items-center justify-center gap-1 px-5 py-1.5 rounded-2xl transition-all duration-200 ${
+                      active
+                        ? 'text-orange-600'
+                        : 'text-slate-400 hover:text-slate-600'
+                    }`}
+                  >
+                    <div className={`w-10 h-8 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                      active ? 'bg-orange-50' : ''
+                    }`}>
+                      <Icon size={active ? 20 : 18} strokeWidth={active ? 2.5 : 1.8} />
+                    </div>
+                    <span className={`text-[11px] font-semibold leading-none ${active ? 'text-orange-600' : 'text-slate-400'}`}>
+                      {label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        </nav>
       )}
 
-      {/* Toast */}
+      {/* Toast notification */}
       {toast && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-neutral-900 text-white text-xs font-medium px-3.5 py-2 rounded-full shadow-lg z-20 flex items-center gap-1.5">
-          {saving ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
-          {toast}
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-30 animate-bounce-in">
+          <div className="flex items-center gap-2.5 bg-slate-900/95 backdrop-blur-sm text-white text-xs font-semibold px-4 py-2.5 rounded-2xl shadow-card-lg border border-white/10 whitespace-nowrap">
+            {saving
+              ? <Loader2 size={13} className="animate-spin text-orange-400" />
+              : <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center"><Check size={10} /></div>
+            }
+            {toast}
+          </div>
         </div>
       )}
     </div>

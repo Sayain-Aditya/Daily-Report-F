@@ -9,7 +9,6 @@ export const emptyForm = () => ({
   date: todayStr(),
   firmName: '',
   owner: '',
-  ownerName: '',
   phone: '',
   designation: '',
   clientStatus: CLIENT_STATUS[0],
