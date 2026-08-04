@@ -28,8 +28,9 @@ export default function WelcomeScreen({ onAuth }) {
       localStorage.setItem('auth_token', data.token);
       localStorage.setItem('auth_user', JSON.stringify(data.user));
       onAuth(data.user);
-    } catch {
-      setError('Could not connect to server');
+    } catch (err) {
+      setError('Server unreachable — check your internet and retry');
+      console.error('Member login error:', err);
     }
     setLoading(false);
   };
@@ -48,8 +49,9 @@ export default function WelcomeScreen({ onAuth }) {
       localStorage.setItem('auth_token', data.token);
       localStorage.setItem('auth_user', JSON.stringify(data.user));
       onAuth(data.user);
-    } catch {
-      setError('Could not connect to server');
+    } catch (err) {
+      setError('Server unreachable — check your internet and retry');
+      console.error('Owner login error:', err);
     }
     setLoading(false);
   };
