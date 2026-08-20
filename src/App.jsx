@@ -57,6 +57,7 @@ export default function App() {
   const [editingId, setEditingId] = useState(null);
   const [search, setSearch] = useState('');
   const [filterDate, setFilterDate] = useState('all');
+  const [filterMonth, setFilterMonth] = useState('all');
   const [saveAndAdd, setSaveAndAdd] = useState(false);
 
   const { entries, settings, loaded, toast, saving, persistSettings, saveEntry, saveBulk, deleteEntry, reset, showToast } = useEntries(authUser);
@@ -68,15 +69,21 @@ export default function App() {
     let list = [...entries];
     if (filterDate === 'today') list = list.filter((e) => e.date === todayStr());
     else if (filterDate !== 'all') list = list.filter((e) => e.date === filterDate);
+    if (filterMonth !== 'all') list = list.filter((e) => e.date.slice(0, 7) === filterMonth);
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter((e) => [e.firmName, e.owner, e.phone, e.location, e.remarks].join(' ').toLowerCase().includes(q));
     }
     return list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-  }, [entries, search, filterDate]);
+  }, [entries, search, filterDate, filterMonth]);
 
   const uniqueDates = useMemo(() => {
     const s = new Set(entries.map((e) => e.date));
+    return Array.from(s).sort((a, b) => (a < b ? 1 : -1));
+  }, [entries]);
+
+  const uniqueMonths = useMemo(() => {
+    const s = new Set(entries.map((e) => e.date.slice(0, 7)));
     return Array.from(s).sort((a, b) => (a < b ? 1 : -1));
   }, [entries]);
 
@@ -193,6 +200,7 @@ export default function App() {
             entries={filteredEntries} allEntries={entries} allCount={entries.length}
             search={search} setSearch={setSearch}
             filterDate={filterDate} setFilterDate={setFilterDate} uniqueDates={uniqueDates}
+            filterMonth={filterMonth} setFilterMonth={(m) => { setFilterMonth(m); if (m !== 'all') setFilterDate('all'); }} uniqueMonths={uniqueMonths}
             onEdit={(entry) => { setForm({ ...entry }); setEditingId(entry.id); setTab('form'); }}
             onDelete={deleteEntry}
             onShare={(entry) => openWhatsApp(buildMessage(entry, settings.salesOfficer))}

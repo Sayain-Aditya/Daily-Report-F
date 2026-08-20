@@ -6,8 +6,14 @@ const inputCls = 'w-full px-4 py-3 rounded-xl border border-slate-200 text-sm bg
 const todayStr = () => new Date().toISOString().slice(0, 10);
 const fmtDate = (d) => new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
 
+const fmtMonth = (ym) => {
+  const [y, m] = ym.split('-');
+  return new Date(+y, +m - 1, 1).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' });
+};
+
 export default function ReportsView({
   entries, allEntries, allCount, search, setSearch, filterDate, setFilterDate, uniqueDates,
+  filterMonth, setFilterMonth, uniqueMonths,
   onEdit, onDelete, onShare, onCopy, onShareSelected, onCopySelected, onExport,
 }) {
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -20,7 +26,7 @@ export default function ReportsView({
   const sendTodayNow = () => { const t = allEntries.filter((e) => e.date === todayStr()); if (t.length) onShareSelected(t); };
   const selectAllVisible = () => { setSelectedIds(entries.map((e) => e.id)); if (!selectMode) setSelectMode(true); };
   const selectedEntries = allEntries.filter((e) => selectedIds.includes(e.id));
-  const hasFilter = filterDate !== 'all' || search.trim();
+  const hasFilter = filterDate !== 'all' || filterMonth !== 'all' || search.trim();
 
   return (
     <div className={`animate-slide-up ${selectMode ? 'pb-20' : ''}`}>
@@ -66,6 +72,46 @@ export default function ReportsView({
         )}
       </div>
 
+      {/* Month filter pills */}
+      {uniqueMonths.length > 0 && (
+        <div className="mb-3">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+            <button
+              onClick={() => setFilterMonth('all')}
+              className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 ${
+                filterMonth === 'all'
+                  ? 'bg-orange-500 text-white border-orange-500 shadow-card'
+                  : 'text-slate-600 bg-white border-slate-200 hover:bg-slate-50'
+              }`}
+            >
+              All months
+              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                filterMonth === 'all' ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+              }`}>{allCount}</span>
+            </button>
+            {uniqueMonths.map((ym) => {
+              const monthCount = allEntries.filter((e) => e.date.slice(0, 7) === ym).length;
+              return (
+                <button
+                  key={ym}
+                  onClick={() => setFilterMonth(filterMonth === ym ? 'all' : ym)}
+                  className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-200 ${
+                    filterMonth === ym
+                      ? 'bg-orange-500 text-white border-orange-500 shadow-card'
+                      : 'text-slate-600 bg-white border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  {fmtMonth(ym)}
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                    filterMonth === ym ? 'bg-white/25 text-white' : 'bg-slate-100 text-slate-500'
+                  }`}>{monthCount}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Date filter */}
       <div className="flex items-center gap-2 mb-4">
         <div className="relative flex-1">
@@ -74,11 +120,11 @@ export default function ReportsView({
             type="date"
             className={inputCls + ' pl-10'}
             value={filterDate === 'all' || filterDate === 'today' ? '' : filterDate}
-            onChange={(e) => setFilterDate(e.target.value || 'all')}
+            onChange={(e) => { setFilterDate(e.target.value || 'all'); if (e.target.value) setFilterMonth('all'); }}
           />
         </div>
         <button
-          onClick={() => setFilterDate(filterDate === 'today' ? 'all' : 'today')}
+          onClick={() => { setFilterDate(filterDate === 'today' ? 'all' : 'today'); setFilterMonth('all'); }}
           className={`shrink-0 px-4 py-3 rounded-xl text-xs font-semibold border transition-all duration-200 ${
             filterDate === 'today'
               ? 'bg-orange-500 text-white border-orange-500 shadow-card'
@@ -89,7 +135,7 @@ export default function ReportsView({
         </button>
         {hasFilter && (
           <button
-            onClick={() => { setFilterDate('all'); setSearch(''); }}
+            onClick={() => { setFilterDate('all'); setFilterMonth('all'); setSearch(''); }}
             className="shrink-0 px-3 py-3 rounded-xl text-xs font-semibold border border-slate-200 text-slate-500 bg-white hover:bg-slate-50 shadow-xs transition-colors"
           >
             <X size={14} />
